@@ -1,7 +1,7 @@
 # **********************
 ## BINF 6210 Bioinformatics Software Tools
 ## ASSIGNMENT 01
-## Actias species BOLD sscript
+## Actias species BOLD script
 ## Maryanne Ogakwu
 ## 1395098
 ## 2024-10-02
@@ -37,10 +37,13 @@ install.packages("janitor")
 getwd()
 # setting my working directory
 setwd("C:/Users/marya/OneDrive/Dokumenty/Masters/binf_6210/Assignment_01/data")
-setwd("C:/Users/marya/OneDrive/Dokumenty/Masters/binf_6210/Assignment_01/R_script")
+
+
+#****ASHLEY INSERT
+setwd("C:/Users/isagi/Downloads/BINF6210/BINFAssignment2")
 
 # loading my Actias (luna moth) data file acquired from the BOLD database
-dfBOLDactias <- read_tsv("../data/Actias_BOLD_data.tsv")
+dfBOLDactias <- read_tsv("C:/Users/isagi/Downloads/BINF6210/BINFAssignment2/Actias_BOLD_data.tsv")
 
 dfBOLDactias <- dfBOLDactias %>%
   janitor::clean_names() %>%
@@ -51,23 +54,15 @@ class(dfBOLDactias)
 # What dimensions do my data set contain
 dim(dfBOLDactias)
 
-# Which countries amongst the data set has the most barcodes of the Actias species. According the the BOLD database, based on visual analysis of the data, it can be inferred that the most barcoded specimens come from East Asian countries. But to determine this Ineed to carry out ***analysis
+# Which countries amongst the data set has the most barcodes of the Actias species. According the the BOLD database, based on visual analysis of the data, it can be inferred that the most barcoded specimens come from East Asian countries. But to determine this I need to carry out ***analysis
 
 # Checking the column names present in my data set to determine what
 colnames(dfBOLDactias)
 
-# At first I tried to run the code below, but it kept giving me error messages about there not being a column in my data set called "country/ocean", after a few Google searches I realized it was because the '/' is a special character and can't be in an string name.
-# dfBOLDactias %>%
-# count(country/ocean, sort = TRUE)
-
-# Stephanie let me know that the solution would be to put the column name in quotations as 'country/ocean' because when in doubt, use quotations. So I ran the code below, but it only retrieved the number of objects in the 'country/ocean'  rather than listing the variables assigned to countries.
-# dfBOLDactias %>%
-# count('country.ocean', sort = TRUE)
-
-# I asked Maddie what she though the issue was and she told me she had the same issue because her data set had a similar issue with the way the columns were named. She let me know I should've used the backwards quote (`) rather than the ('). After changing this, my code ran properly.
-
+#ASHLEY INSERT
 dfBOLDactias %>%
-  count(`country.ocean`, sort = TRUE)
+ filter(!is.na('country/ocean'))
+count('country/ocean', sort = TRUE)
 
 # I want to plot a global map of the distribution of the Actias species but my data set does not contain latitude and longitude values, Maddie and Bartek told me their data sets also only contained coordinate values and that they had to split them into long and lat columns so below I am breaking my coordinate values to obtain my lat and long values to plot a global map.
 dflongandlat <- dfBOLDactias %>%
@@ -79,16 +74,17 @@ dflongandlat <- dfBOLDactias %>%
 
 # To create my global map, I need to find the mean latitude and longitude of my data set
 
-# dfAvgLat <- aggregate(x = dflongandlat$lat, by = list(`country/ocean` = dflongandlat$`country/ocean`), FUN = function(x) mean(x, na.rm = TRUE))
+dfAvgLat <- aggregate(x = dflongandlat$lat, by = list(`country/ocean` = dflongandlat$`country/ocean`), FUN = function(x) mean(x, na.rm = TRUE))
+
 
 # this code isn't working
 warnings()
 # There were 27 warnings produced in my console??? (˃̣̣̥ ᯅ˂̣̣̥).The code is only giving me 27 NA values for 790 objects. I can understand why there are NA's because those are in the data set, but why am I only getting 27 values in the output, because the code is supposed to group all the data by countries.So there should by 27 countries listed, not 27 NA values.
 # After troubleshooting I realized the issue came from when I separated the coordinates values into longitude and latitude
 
-# dflongandlat<- dfBOLDactias %>%
-# separate(coord, into = c("lat", "long"), sep = ",", remove = FALSE) %>%
-# select(`country.ocean`, coord, long, lat)
+dflongandlat<- dfBOLDactias %>%
+separate(coord, into = c("lat", "long"), sep = ",", remove = FALSE) %>%
+select(`country.ocean`, coord, long, lat)
 
 # This code produced a data set contained special characters like "[]" because the original coordinate data was uploaded to the data base with square brackets.
 rm(dflongandlat)
@@ -111,6 +107,12 @@ dfAvgLat <- aggregate(x = dfBOLDAc$lat, by = list(`country/ocean` = dfBOLDAc$`co
 # Question 1:
 # Determining the ecological of distribution of barcoded BINs on a global scale
 
+#Ashley Insert
+df_freq <- dfBOLDAc %>%
+  count(long, lat, name = "freq")
+
+dfBOLDAc <- dfBOLDAc %>% filter(!is.na(long) & !is.na(lat))
+
 # Now that I have all my prileminary data, I can plot a map of the global distribution of all the barcoded Actias BINs, using the longitudinal and latitudinal values
 world_map <- map_data("world")
 # Plotting the Global distribution of barcoded Actias spp.
@@ -129,6 +131,7 @@ ggplot(data = dfBOLDAc) +
     x = "Longitude", y = "Latitude"
   ) +
   theme_minimal()
+
 
 # Based on the map produced,it's clear that Actias BINs have been barcoded from North America all the way to East Asia. Though it seems like there is a greater amount of BINs in East Asia, suggesting that the area is richer is ecological diversity and variation. I'm going to zoom in on these particular areas of interest to see how different the frequencies are.
 
@@ -175,20 +178,69 @@ ggplot(data = dfBOLDAc) +
 country_summary <- dfBOLDactias %>%
   count(`country.ocean`, sort = TRUE)
 
+#Ashley insert
+country_summary <- dfBOLDactias %>%
+  filter(!is.na(country.ocean)) %>%
+  count(country.ocean, sort = TRUE)
+
+
 top10 <- country_summary %>%
   slice_max(n, n = 10)
 # Top 10 countries by record count
 
-ggplot(top10, aes(x = reorder(`country.ocean`, n), y = n)) +
-  geom_col(fill = "darkgreen") +
+#Ashley Insert - Finalized graph has NA category removed and an added colour gradient + legend for easier visualization.
+ggplot(top10, aes(x = reorder(`country.ocean`, n), y = n, fill = n)) +
+  geom_col() +
   coord_flip() +
+  scale_fill_viridis_c(option = "viridis", name = "Number of Records") +
   labs(
     title = "Top 10 Countries with Most Actias spp. BINs",
     x = "Country",
     y = "Number of Records"
   ) +
   theme_minimal()
+
+#Ashley insert-  visualizing top 10 sites on world map
+
+world_centroids <- map_data("world") %>%
+  group_by(region) %>%
+  summarize(
+    long = mean(long),
+    lat = mean(lat)
+  )
+
+top10_coords <- top10 %>%
+  left_join(world_centroids, by = c("country.ocean" = "region"))
+
+ggplot() +
+  # Draw the world map
+  geom_polygon(
+    data = map_data("world"),
+    aes(x = long, y = lat, group = group),
+    fill = "gray90",
+    color = "gray60"
+  ) +
+  geom_point(
+    data = top10_coords,
+    aes(x = long, y = lat, size = n, color = n),
+    alpha = 0.8
+  ) +
+  scale_size_continuous(range = c(3, 10), name = "Number of BINs") +
+  scale_color_viridis_c(option = "viridis", name = "Number of BINs") +
+  labs(
+    title = "Top 10 Countries with Most Actias spp. BINs",
+    x = "Longitude",
+    y = "Latitude"
+  ) +
+  coord_fixed(1.3) +
+  theme_minimal() +
+  theme(legend.position = "bottom")
+
+
 # Based on the graphs produced, China has the most barcoded BINs in the data set, showing that the region is highly diverse. But what makes this country the most diverse in barcoded species, it could be due to multiple reasons. Firstly there could be sampling bias, meaning there are some regions that have an Actias spp. that simply hasn't been barcoded due to lack of interest from researchers.
+
+#ASHLEY INSERT - BIN Similarities for top 10 countries
+
 
 #####################################################
 # Question 3
@@ -201,7 +253,7 @@ dfCount.by.BIN2 <- dfBOLDactias %>%
 # Manipulating my BIN data set by switching the columns with the rows to 'spread the values'.
 dfBINs.spread2 <- pivot_wider(data = dfCount.by.BIN2, names_from = bin.uri, values_from = n)
 
-# Creating a rarecurve using extracted data from the BINs spread to assees species richness and biodiversity
+# Creating a rarecurve using extracted data from the BINs spread to assess species richness and biodiversity
 x <- rarecurve(dfBINs.spread2, xlab = "Individuals Barcoded", ylab = "BIN Richness")
 
 # Next I'll be plotting a species accumulation graph to determine the rate at which new species of the Actias genus are likely to be barcoded and classified
